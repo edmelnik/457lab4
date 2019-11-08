@@ -25,7 +25,7 @@ struct ntwk_stuff {
 	int length;							//length of the file 
 };
 
-struct ntwk_stuff packet;
+struct ntwk_stuff packet,packet2;
 
 
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 void Xmit(void)
 {
       int rc;
-	  int ret;
+	  //int ret;
 	 
 	  char directory[100];
 	 
@@ -78,17 +78,38 @@ void Xmit(void)
 			  packet.file, getcwd(directory,sizeof(directory)));
 		  exit(1);
 	  }
+	  packet.command = 0;
+	  rc = NtwkSend(sizeof(packet), (unsigned char*)&packet);
+	  if (rc < 0)
+		  break;
+	  rc = NtwkRecv(sizeof(packet), (unsigned char*)&packet2);
+	  if (rc < 0)
+		  break;
+
+
 	  while (1)
 	  {
-		  ret = fread(packet.buffer, sizeof(packet.buffer), sizeof(char), filep);		//read the file
-		  if (ret <= 0)
-			  break;
-		  rc = NtwkSend(sizeof(text), text);
-		  if (rc < 0)
+		  packet.length = fread(packet.buffer, sizeof(packet.buffer), sizeof(char), filep);		//read the file
+		  if (packet.length <= 0)
 			  break;
 
+		  packet.command = 1;
+		  rc = NtwkSend(sizeof(packet), (unsigned char*)&packet);
+		  if (rc < 0)
+			  break;
+		  rc = NtwkRecv(sizeof(packet), (unsigned char*)&packet2);
+		  if (rc < 0)
+			  break;
 		  // here is where you send the data and wait for an acknowledgement
 	  }
+	  packet.command = 2;
+	  rc = NtwkSend(sizeof(packet), (unsigned char*)&packet);
+	  if (rc < 0)
+		  break;
+	  rc = NtwkRecv(sizeof(packet), (unsigned char*)&packet2);
+	  if (rc < 0)
+		  break;
+
 	  fclose(filep);												//close the file 
 
 
